@@ -1,0 +1,8 @@
+[package]
+name = "zen-console-input"
+license = "MIT"
+description = "Simple interactive prompts for the command line"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
