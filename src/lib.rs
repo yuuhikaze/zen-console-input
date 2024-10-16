@@ -1,66 +1,78 @@
-use std::{
-    error::Error,
-    io::{self, Write},
-    str::FromStr,
-};
+//! ZenConsoleInput: A simple, cross-platform console input library for Rust.
+//!
+//! This library provides an easy-to-use interface for getting various types of
+//! user input from the console, including single-line input, multiline input,
+//! password input, and selection from a list of options.
 
-pub struct ZenConsoleInput {
-    prompt: Option<String>,
-}
+mod input;
+mod password;
+mod selection;
+
+pub use input::Input;
+pub use password::Password;
+pub use selection::Selection;
+
+/// The main struct for ZenConsoleInput.
+///
+/// Use this struct to create new input, password, or selection prompts.
+pub struct ZenConsoleInput;
 
 impl ZenConsoleInput {
+    /// Creates a new ZenConsoleInput instance.
     pub fn new() -> Self {
-        Self { prompt: None }
+        ZenConsoleInput
     }
 
-    /// Prompt a message to the user
-    pub fn prompt(&self, prompt: &str) -> Self {
-        Self {
-            prompt: Some(prompt.to_string()),
+    /// Creates a new Input instance for text input.
+    pub fn input(&self) -> Input {
+        Input::new()
+    }
+
+    /// Creates a new Selection instance for choosing from a list of options.
+    pub fn selection(&self) -> Selection {
+        Selection::new()
+    }
+
+    /// Creates a new Password instance for password input.
+    pub fn password(&self) -> Password {
+        Password::new()
+    }
+
+    /// Opens the user's default text editor to edit the given content.
+    ///
+    /// This function is only available when the "editor" feature is enabled.
+    #[cfg(feature = "editor")]
+    pub(crate) fn edit_in_external_editor(initial_content: &str) -> std::io::Result<String> {
+        use std::fs::File;
+        use std::io::{self, Read, Write};
+        use std::process::Command;
+        use tempfile::NamedTempFile;
+
+        let mut temp_file = NamedTempFile::new()?;
+        write!(temp_file, "{}", initial_content)?;
+
+        let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
+        let status = Command::new(editor).arg(temp_file.path()).status()?;
+
+        if !status.success() {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Editor exited with non-zero status",
+            ));
         }
-    }
 
-    fn prompt_and_read_line(&self) -> String {
-        if let Some(p) = &self.prompt {
-            print!("{p}");
-            io::stdout().flush().unwrap();
-        }
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        input.trim().to_string()
+        let mut content = String::new();
+        File::open(temp_file.path())?.read_to_string(&mut content)?;
+        Ok(content)
     }
+}
 
-    /// Read single value
-    pub fn read_value<T, E>(&self) -> T
-    where
-        T: FromStr<Err = E>,
-        E: Error + 'static,
-    {
-        match self.prompt_and_read_line().parse() {
-            Ok(it) => it,
-            Err(err) => {
-                eprintln!("{err}");
-                return self.read_value();
-            }
-        }
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    /// Read multiple inputs separated by whitespaces
-    pub fn read_vector<T, E>(&self) -> Vec<T>
-    where
-        T: FromStr<Err = E>,
-        E: Error + 'static,
-    {
-        self.prompt_and_read_line()
-            .split_whitespace()
-            .map(|x| match x.parse() {
-                Ok(it) => Ok(it),
-                Err(err) => {
-                    eprintln!("{err}");
-                    Err(err)
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap_or_else(|_| self.read_vector())
+    #[test]
+    fn test_zen_console_input_creation() {
+        let _zci = ZenConsoleInput::new();
     }
 }

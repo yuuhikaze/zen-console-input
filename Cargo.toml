@@ -1,8 +1,21 @@
 [package]
 name = "zen-console-input"
+version = "1.0.0"
+authors = ["Steven Merino <yuuhikaze@protonmail.com>"]
 license = "MIT"
-description = "Simple interactive prompts for the command line"
-version = "0.1.0"
 edition = "2021"
+description = "Simple but full fledged CLI"
+readme = "README.md"
+repository = "https://github.com/yuuhikaze/zen-console-input"
+keywords = ["prompt", "input", "CLI", "bash"]
 
 [dependencies]
+rpassword = "7.3.1"
+tempfile = "3.13.0"
+
+[features]
+editor = []
+
+[[example]]
+name = "demo"
+path = "examples/demo.rs"
